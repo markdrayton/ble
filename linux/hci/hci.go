@@ -473,6 +473,10 @@ func (h *HCI) handleCommandStatus(b []byte) error {
 
 func (h *HCI) handleLEConnectionComplete(b []byte) error {
 	e := evt.LEConnectionComplete(b)
+	if e.Role() == roleMaster && ErrCommand(e.Status()) == ErrConnID {
+		// The connection was canceled successfully.
+		return nil
+	}
 	c := newConn(h, e)
 	h.muConns.Lock()
 	h.conns[e.ConnectionHandle()] = c
@@ -484,10 +488,6 @@ func (h *HCI) handleLEConnectionComplete(b []byte) error {
 			default:
 				go c.Close()
 			}
-			return nil
-		}
-		if ErrCommand(e.Status()) == ErrConnID {
-			// The connection was canceled successfully.
 			return nil
 		}
 		return nil
